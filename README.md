@@ -61,6 +61,28 @@ C="--steps 3000000 --n-envs 4 --lr 3e-4 --net 64 --eval-every 250000 \
 .venv/bin/python scripts/report.py --group PPO ppo_s0 --group PPO-Lag ppolag_b0.75_s0
 ```
 
+The other configurations add one flag to `$C`: `--efc-budget 1.0` / `0.5` for the other budgets, `--wear-cost W`
+(with `--algo ppo`) for the wear-cost runs, and `--exclude-spikes 1.0` to train without price-spike days.
+`scripts/plots.py` expects the run names it lists in `GROUPS` (`ppo_s{0-4}`, `ppolag_b{budget}_s{0-4}`,
+`ppowear_w{cost}_s{0-2}`); `scripts/animate.py` also needs `ffmpeg` on the path.
+
+```bash
+.venv/bin/python scripts/spikes.py --group PPO ppo_s0 ppo_s1 --group "PPO (no spikes)" noSpike_ppo_s0 noSpike_ppo_s1
+.venv/bin/python scripts/plots.py
+.venv/bin/python scripts/animate.py --day 332 --run ppo_s4
+```
+
+## Tests
+
+```bash
+uv sync --python 3.11 --managed-python --group dev
+.venv/bin/python -m pytest tests
+```
+
+The tests use four synthetic days, so they need none of the raw data. They check that the environment and the MILP
+oracle agree exactly on bill, cycles and final charge, that any action sequence keeps the battery within its limits
+and back at 50% by midnight, and that the Lagrangian penalty reaches the training environments.
+
 ## Changes from the proposal
 
 - **Actions** are a fraction of the power feasible at that step (mapped linearly onto the feasible range), not a
@@ -71,6 +93,16 @@ C="--steps 3000000 --n-envs 4 --lr 3e-4 --net 64 --eval-every 250000 \
 - **PPO-Lagrangian** holds λ at 0 for the first 500k steps, and only selects checkpoints from after that.
 - **Solar** comes from CityLearn's hourly AMY2018 Austin weather file through pvlib, not NSRDB.
 - **Budgets** of 0.5 and 0.75 cycles/day were added, because unconstrained PPO already cycles about once a day.
+
+## Limitations
+
+- **Price information.** The agent, like the threshold rule, sees the real-time price of the interval it is
+  acting in. In practice that price is only settled after the interval, so the reported savings are an upper
+  bound for a controller that acts on forecasts.
+- **One household, one year.** All results are for a single Travis County home and 2018 prices; the test days
+  are held-out weeks of the same year, not a later year.
+- **Checkpoint selection** uses the share of oracle savings summed over validation days, which a few spike days
+  can dominate.
 
 ## AI-use disclosure
 
