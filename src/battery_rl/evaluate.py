@@ -70,7 +70,8 @@ def summarize(per_day: pd.DataFrame) -> dict:
         "mean_bill": float(per_day["bill"].mean()),
         "mean_saving": float(saving.mean()),
         "pct_of_oracle": float(100 * saving.sum() / oracle_saving.sum()),
-        # same ratio with each day weighted equally, so a few spike days cannot dominate it
-        "median_day_pct_of_oracle": float(100 * np.median(saving / oracle_saving.where(oracle_saving > 1e-9))),
+        # same ratio with each day weighted equally, so a few spike days cannot dominate it; days where even the
+        # oracle saves nothing have no share to report and are skipped (np.median would turn them into NaN)
+        "median_day_pct_of_oracle": float(100 * np.nanmedian(saving / oracle_saving.where(oracle_saving > 1e-9))),
         "mean_efc": float(per_day["efc"].mean()),
     }
