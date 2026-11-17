@@ -93,11 +93,11 @@ def main() -> None:
     nob = thr.assign(bill=thr.no_battery, efc=0.0)
     rows.append(("No battery", 1, {k: f"{v:7.2f}" for k, v in scores(nob, ordinary).items()}))
 
-    head = f"{'method':<20}{'seeds':>6}  {'% oracle (all)':>16}  {'% oracle (ordinary)':>19}  {'bill $/day':>16}  {'saving $/day':>16}  {'EFC/day':>16}"
+    head = f"{'method':<24}{'seeds':>6}  {'% oracle (all)':>16}  {'% oracle (ordinary)':>19}  {'bill $/day':>16}  {'saving $/day':>16}  {'EFC/day':>16}"
     print(head)
     print("-" * len(head))
     for label, n, r in rows:
-        print(f"{label:<20}{n:>6}  {r['pct_all']:>16}  {r['pct_ordinary']:>19}  {r['bill']:>16}  {r['saving']:>16}  {r['efc']:>16}")
+        print(f"{label:<24}{n:>6}  {r['pct_all']:>16}  {r['pct_ordinary']:>19}  {r['bill']:>16}  {r['saving']:>16}  {r['efc']:>16}")
 
 
 if __name__ == "__main__":

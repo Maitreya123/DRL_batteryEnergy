@@ -39,7 +39,7 @@ def main() -> None:
     test_ordinary = np.setdiff1d(split["test"], spikes)
     days = np.union1d(spikes, split["test"])
     sets = {"test ordinary": test_ordinary, "test spikes": test_spikes, "all spikes": spikes}
-    print(f"spike days (max price >= ${SPIKE_PRICE}/kWh): {len(spikes)}; in test: {list(test_spikes)}")
+    print(f"spike days (max price >= ${SPIKE_PRICE}/kWh): {len(spikes)}; in test: {[int(d) for d in test_spikes]}")
 
     header = f"{'method':<24}" + "".join(f"{k + ' (%)':>20}" for k in sets) + "   per test-spike day (%)"
     print(header)

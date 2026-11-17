@@ -213,7 +213,11 @@ class HomeBatteryEnv(gym.Env):
 
 
 class DiscreteActions(gym.ActionWrapper):
-    """11 evenly spaced power levels from -p_max to +p_max (for DQN)."""
+    """n evenly spaced actions in [-1, 1] (for DQN), mapped to power like continuous actions.
+
+    With absolute actions these are -p_max ... +p_max kW; with relative actions (the default) they are
+    fractions of the power feasible at that step.
+    """
 
     def __init__(self, env: gym.Env, n: int = 11):
         super().__init__(env)
