@@ -11,7 +11,6 @@ own load minus solar, so the gaps between the cost lines are exactly what each b
 from __future__ import annotations
 
 import argparse
-import json
 
 import matplotlib
 
@@ -26,6 +25,7 @@ from stable_baselines3 import PPO
 from battery_rl.baselines import day_arrays, solve_oracle, threshold_controller, tune_threshold
 from battery_rl.data import LST, ROOT, load_dataset, split_days
 from battery_rl.env import STEPS_PER_DAY, EnvConfig, HomeBatteryEnv
+from battery_rl.evaluate import run_args, run_config
 
 # Reference palette (dataviz skill, light mode), matching scripts/plots.py.
 BLUE, ORANGE = "#2a78d6", "#eb6834"
@@ -61,9 +61,7 @@ def main() -> None:
 
     df = load_dataset()
     split = split_days(np.sort(df["day"].unique()))
-    a = json.loads((ROOT / "runs" / args.run / "args.json").read_text())
-    cfg = EnvConfig(relative_actions=True, linear_actions=a.get("linear_actions", False),
-                    battery_only_reward=a.get("battery_reward", False))
+    cfg = run_config(run_args(args.run))
     env = HomeBatteryEnv(df, [args.day], cfg)
     b = cfg.battery
 

@@ -145,3 +145,15 @@ def test_lagrangian_penalty_reaches_monitored_envs(data):
     _, r_pen, _, _, info = env.step(np.array([1.0]))
     _, r_plain, _, _, _ = plain.step(np.array([1.0]))
     assert r_plain - r_pen == pytest.approx(2.0 * info["throughput_kwh"] / (2 * 13.5))
+
+
+def test_run_config_from_args():
+    from battery_rl.evaluate import run_config
+
+    main = {"algo": "ppo", "import_adder": 0.0, "price_only": False, "wear_cost": 0.01, "oob_penalty": 1.0,
+            "absolute_actions": False, "linear_actions": True, "battery_reward": True}
+    cfg = run_config(main)
+    assert cfg.relative_actions and cfg.linear_actions and cfg.battery_only_reward and cfg.include_load_solar
+    assert cfg.wear_cost == 0.0  # scored on the real bill
+    old = run_config({"algo": "dqn", "import_adder": 0.045, "price_only": True, "wear_cost": 0.0})
+    assert not old.relative_actions and not old.include_load_solar and old.tariff.import_adder == 0.045

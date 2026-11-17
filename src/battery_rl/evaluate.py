@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 
 from .baselines import day_arrays, run_controller, solve_oracle
-from .data import PROCESSED
-from .env import EnvConfig, HomeBatteryEnv
+from .data import PROCESSED, ROOT
+from .env import EnvConfig, HomeBatteryEnv, Tariff
 
 
 def _cfg_key(cfg: EnvConfig, efc_cap) -> str:
@@ -41,6 +41,27 @@ def oracle_table(env: HomeBatteryEnv, days, efc_cap: float | None = None) -> pd.
         have.to_parquet(tmp)
         os.replace(tmp, path)  # atomic, so parallel runs never read a half-written file
     return have.loc[[int(d) for d in days]]
+
+
+def run_args(run: str) -> dict:
+    """The command-line arguments a run in runs/<run>/ was trained with."""
+    return json.loads((ROOT / "runs" / run / "args.json").read_text())
+
+
+def run_config(args: dict) -> EnvConfig:
+    """Environment for scoring a trained run, rebuilt from its args.json.
+
+    Wear cost is always 0 here: it is only a training signal, and every method is scored on the real bill.
+    Runs from before relative actions existed have no flag (and no oob_penalty) and used absolute actions.
+    """
+    return EnvConfig(
+        tariff=Tariff(import_adder=args.get("import_adder", 0.0)),
+        include_load_solar=not args.get("price_only", False),
+        wear_cost=0.0,
+        relative_actions=not args.get("absolute_actions", "oob_penalty" not in args),
+        linear_actions=args.get("linear_actions", False),
+        battery_only_reward=args.get("battery_reward", False),
+    )
 
 
 def model_controller(model, deterministic: bool = True):
