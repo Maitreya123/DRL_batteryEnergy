@@ -43,7 +43,7 @@ plt.rcParams.update({
 GROUPS = {
     "PPO": [f"ppo_s{s}" for s in range(5)],
     **{f"PPO-Lag b{b}": [f"ppolag_b{b}_s{s}" for s in range(5)] for b in ("1.0", "0.75", "0.5")},
-    **{f"PPO wear {w}": [f"ppowear_w{w}_s{s}" for s in range(3)] for w in ("0.005", "0.01", "0.02", "0.04")},
+    **{f"PPO wear {w}": [f"ppowear_w{w}_s{s}" for s in range(5)] for w in ("0.005", "0.01", "0.02", "0.04")},
 }
 
 

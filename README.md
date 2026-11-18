@@ -13,7 +13,7 @@ with a fixed wear cost against a tuned price-threshold rule and a perfect-foresi
 |---|---|---|---|
 | PPO (5 seeds) | 71.8 ± 0.9 | 57.9 ± 2.5 | 0.95 |
 | PPO-Lagrangian, budget 0.75 cycles/day (5 seeds) | 70.7 ± 1.8 | 55.7 ± 4.5 | 0.74 |
-| PPO + wear cost 1 ¢/kWh (3 seeds) | 67.8 ± 15.4 | 53.3 ± 19.4 | 0.70 |
+| PPO + wear cost 1 ¢/kWh (5 seeds) | 67.7 ± 5.7 | 54.2 ± 7.4 | 0.74 |
 | DQN, 11 discrete actions (5 seeds) | 64.5 ± 7.5 | 44.6 ± 12.7 | 1.54 |
 | SAC (5 seeds) | 52.1 ± 15.4 | 38.3 ± 6.7 | 1.52 |
 | Threshold rule | 56.2 | 58.2 | 0.59 |
@@ -26,11 +26,10 @@ SAC uses the same environment and flags as PPO (`--algo sac`, Stable-Baselines3 
 `results/sac_test_table.txt`). It falls short of both PPO and the threshold rule, cycling about 1.5 times a day
 without the oracle's savings to show for it; with gamma = 1.0 its bootstrapped critic may be the weak point.
 
-"Ordinary days" excludes the 4 test days whose price exceeded $1/kWh. Seeds 3 and 4 of every wear-cost setting
-(0.5, 1, 2 and 4 ¢/kWh) were trained on a MacBook, so each wear cost now has 5 seeds;
-`results/wear_seeds34_test_table.txt` scores the two new seeds alone. The 5-seed rows need the runs from both
-machines in one `runs/` folder: `python scripts/report.py --group PPO-wear_0.01 ppowear_w0.01_s0 ... ppowear_w0.01_s4`. Full tables: `results/test_table.txt`,
-`results/spikes_table.txt`. Figures: `results/figures/`. Day replays: `results/videos/`.
+"Ordinary days" excludes the 4 test days whose price exceeded $1/kWh. Each wear cost (0.5, 1, 2 and 4 ¢/kWh) has
+5 seeds: seeds 0-2 were trained on the lab machine and seeds 3-4 on a MacBook (`results/wear_seeds34_test_table.txt`
+scores the two new seeds alone). Full tables: `results/test_table.txt`, `results/spikes_table.txt`. Figures:
+`results/figures/`. Day replays: `results/videos/`.
 
 ## Retail tariff (4.5 ¢/kWh charge on imports)
 
@@ -116,7 +115,7 @@ C="--steps 3000000 --n-envs 4 --lr 3e-4 --net 64 --eval-every 250000 \
 The other configurations add one flag to `$C`: `--efc-budget 1.0` / `0.5` for the other budgets, `--wear-cost W`
 (with `--algo ppo`) for the wear-cost runs, and `--exclude-spikes 1.0` to train without price-spike days.
 `scripts/plots.py` expects the run names it lists in `GROUPS` (`ppo_s{0-4}`, `ppolag_b{budget}_s{0-4}`,
-`ppowear_w{cost}_s{0-2}`); `scripts/animate.py` also needs `ffmpeg` on the path.
+`ppowear_w{cost}_s{0-4}`); `scripts/animate.py` also needs `ffmpeg` on the path.
 
 ```bash
 .venv/bin/python scripts/spikes.py --group PPO ppo_s0 ppo_s1 --group "PPO (no spikes)" noSpike_ppo_s0 noSpike_ppo_s1
