@@ -160,6 +160,28 @@ loses against the rule comes from refilling the battery late in the evening to m
 - **Solar** comes from CityLearn's hourly AMY2018 Austin weather file through pvlib, not NSRDB.
 - **Budgets** of 0.5 and 0.75 cycles/day were added, because unconstrained PPO already cycles about once a day.
 
+## Ablation: what each fix from "Changes from the proposal" buys
+
+Each row removes one fix from the main configuration (PPO rows) or from PPO-Lagrangian with a 0.75 budget (last
+two rows), 3 seeds each, trained on a MacBook; "original setup" removes all three PPO fixes at once (absolute
+actions, full-bill reward, initial std 1). Full table: `results/ablation_table.txt`.
+
+| Configuration | % of oracle, all days | ordinary days | cycles/day | per-seed, all days |
+|---|---|---|---|---|
+| PPO, all fixes | 69.5 ± 4.8 | 53.6 ± 3.6 | 1.01 | |
+| without battery-only reward | 66.9 ± 3.4 | 49.7 ± 2.1 | 0.94 | 67.0, 68.2, 65.5 |
+| without linear actions | 71.0 ± 5.8 | 56.1 ± 10.3 | 0.95 | 73.6, 69.0, 70.5 |
+| without the calmer initial policy | 72.4 ± 1.4 | 58.7 ± 5.1 | 1.02 | 72.2, 73.0, 71.9 |
+| original setup (none of the three) | 56.0 ± 64.2 | 42.8 ± 51.3 | 1.02 | 72.4, **26.2**, 69.5 |
+| PPO-Lagrangian b0.75, with λ warm-up | 71.1 ± 4.3 | 54.4 ± 2.3 | 0.72 | |
+| without λ warm-up | 70.5 ± 5.2 | 55.8 ± 9.8 | 0.70 | |
+
+With these 3M-step runs, no single fix changes the mean much except the battery-only reward, which is worth about
+3 points (4 on ordinary days) consistently across seeds. Removing all three at once is what breaks training: one of
+three seeds collapsed to 26% of the oracle while the other two were normal, which matches the "PPO sometimes gets
+stuck" failure the fixes were made for. So the fixes mainly buy reliability across seeds, not a higher mean. The λ
+warm-up has no measurable effect at a 0.75 budget. Three seeds cannot rule out small effects either way.
+
 ## Limitations
 
 - **Price information.** The agent, like the threshold rule, sees the real-time price of the interval it is
