@@ -15,11 +15,17 @@ with a fixed wear cost against a tuned price-threshold rule and a perfect-foresi
 | PPO-Lagrangian, budget 0.75 cycles/day (5 seeds) | 70.7 ± 1.8 | 55.7 ± 4.5 | 0.74 |
 | PPO + wear cost 1 ¢/kWh (3 seeds) | 67.8 ± 15.4 | 53.3 ± 19.4 | 0.70 |
 | DQN, 11 discrete actions (5 seeds) | 64.5 ± 7.5 | 44.6 ± 12.7 | 1.54 |
+| SAC (5 seeds) | 52.1 ± 15.4 | 38.3 ± 6.7 | 1.52 |
 | Threshold rule | 56.2 | 58.2 | 0.59 |
 | Oracle (hindsight) | 100 | 100 | 1.72 |
 
 DQN uses the same configuration as PPO, with the action range split into 11 evenly spaced levels
 (`results/dqn_test_table.txt`). It cycles far more than PPO and trails it on ordinary days.
+
+SAC uses the same environment and flags as PPO (`--algo sac`, Stable-Baselines3 defaults otherwise, no tuning;
+`results/sac_test_table.txt`). It falls short of both PPO and the threshold rule, cycling about 1.5 times a day
+without the oracle's savings to show for it; with gamma = 1.0 its bootstrapped critic may be the weak point.
+
 "Ordinary days" excludes the 4 test days whose price exceeded $1/kWh. Full tables: `results/test_table.txt`,
 `results/spikes_table.txt`. Figures: `results/figures/`. Day replays: `results/videos/`.
 
@@ -51,7 +57,7 @@ src/battery_rl/
   env.py         Gymnasium environment (one day = 96 steps, start and end at 50% charge)
   baselines.py   MILP oracle (scipy/HiGHS), threshold rule
   evaluate.py    per-day scoring against no battery and the oracle (oracle results cached)
-  train.py       DQN, PPO, PPO-Lagrangian (Stable-Baselines3)
+  train.py       DQN, PPO, PPO-Lagrangian, SAC (Stable-Baselines3)
 scripts/
   check_baselines.py   env-vs-oracle replay check and baseline savings
   report.py            test-day table with seed-level confidence intervals

@@ -15,7 +15,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from scipy import stats
-from stable_baselines3 import DQN, PPO
+from stable_baselines3 import DQN, PPO, SAC
 
 from battery_rl.baselines import threshold_controller, tune_threshold
 from battery_rl.data import ROOT, load_dataset, split_days
@@ -69,7 +69,7 @@ def main() -> None:
             cfg = run_config(a)
             cfg_cache[label] = cfg
             env = HomeBatteryEnv(df, days, cfg)
-            algo = DQN if a["algo"] == "dqn" else PPO
+            algo = {"dqn": DQN, "sac": SAC}.get(a["algo"], PPO)
             if a["algo"] == "dqn":
                 env = DiscreteActions(env)
             model = algo.load(d / args.model, device="cpu")
