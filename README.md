@@ -88,6 +88,7 @@ scripts/
   plots.py             report figures
   animate.py           day-replay videos
   schedules.py         hour-by-hour comparison of PPO, the threshold rule and the oracle
+  deadband.py          where PPO-Lagrangian's cycles come from, and the evaluation-time deadband
 ```
 
 ## Reproducing
@@ -211,11 +212,11 @@ steadier across seeds but lands on the same floor. So the floor is probably not 
 
 What the agents do points to the action mapping instead. With linear actions, idle is not a fixed action: the
 action that maps to 0 kW moves every step with the feasible range, so the deterministic policy rarely hits it
-exactly. The b0.5 agents are idle in only 15-36% of steps, and flows under 1 kW add 0.09-0.18 cycles/day, about the
+exactly. The b0.5 agents are idle in only 13-36% of steps, and flows under 1 kW add 0.09-0.20 cycles/day, about the
 gap to the budget. Rounding requested flows below a deadband to 0 kW at evaluation time, without retraining,
 brings all six agents to 0.49-0.54 cycles/day, at a cost of 1-2 points of savings for most seeds and 7-10 for two
-(`results/cycle_floor_deadband.txt`). Training with an explicit idle action, or a deadband inside the environment,
-is the natural next step.
+(`results/cycle_floor_small_flows.txt`, `results/cycle_floor_deadband.txt`, both from `scripts/deadband.py`).
+Training with an explicit idle action, or a deadband inside the environment, is the natural next step.
 
 ## AI-use disclosure
 
