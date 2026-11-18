@@ -84,6 +84,7 @@ scripts/
   spikes.py            stretch goal: price-spike robustness
   plots.py             report figures
   animate.py           day-replay videos
+  schedules.py         hour-by-hour comparison of PPO, the threshold rule and the oracle
 ```
 
 ## Reproducing
@@ -129,6 +130,24 @@ uv sync --python 3.11 --managed-python --group dev
 The tests use four synthetic days, so they need none of the raw data. They check that the environment and the MILP
 oracle agree exactly on bill, cycles and final charge, that any action sequence keeps the battery within its limits
 and back at 50% by midnight, and that the Lagrangian penalty reaches the training environments.
+
+## Why PPO only ties the threshold rule on ordinary days
+
+`scripts/schedules.py` replays PPO (5 seeds, trained on a MacBook with the main configuration), the tuned threshold
+rule and the oracle on the 87 ordinary test days and compares them hour by hour (`results/schedules_summary.txt`,
+`results/schedules_by_hour.csv`, `results/figures/schedules.png`). PPO and the rule end up with almost the same
+savings ($0.283 vs $0.293 a day, 56% vs 58% of the oracle), but they get there differently:
+
+- **PPO earns more in the afternoon and evening** (14:00-20:00, +$0.23/day over the rule): it discharges
+  into moderate peaks that the rule's fixed 5.4 ¢ threshold ignores.
+- **It gives it back at the end of the day** (22:00-24:00, -$0.20/day): having discharged in the evening, it has
+  to recharge to 50% before midnight, when prices are still above the overnight lows.
+- **It trades small amounts almost all the time.** PPO is idle in 20% of steps and at full power in 3%, against
+  86% and 12% for the rule. It sells at 4.3 ¢/kWh on average (the rule: 5.9 ¢) and earns $0.29 per cycle against
+  the rule's $0.51. That is about the oracle's $0.29 per cycle, but at 0.98 cycles a day instead of 1.72.
+
+So PPO's problem on ordinary days is not missing the peaks. It cycles at a thin margin, and most of what it
+loses against the rule comes from refilling the battery late in the evening to meet the end-of-day rule.
 
 ## Changes from the proposal
 

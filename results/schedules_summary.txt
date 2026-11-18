@@ -1,0 +1,51 @@
+87 ordinary test days, PPO seeds: ppo_s0, ppo_s1, ppo_s2, ppo_s3, ppo_s4; rule: charge <= 2.02c, discharge >= 5.40c
+mean saving per day ($): {'Oracle': 0.503, 'PPO': 0.283, 'Threshold rule': 0.293}
+share of oracle: PPO 56.2%, rule 58.2%
+
+PPO minus rule, saving by hour ($/day):
+hour
+0     0.0380
+1    -0.0034
+2    -0.0162
+3    -0.0090
+4    -0.0077
+5    -0.0076
+6    -0.0092
+7    -0.0036
+8    -0.0092
+9    -0.0039
+10    0.0001
+11   -0.0029
+12   -0.0045
+13    0.0051
+14    0.0158
+15    0.0359
+16    0.0502
+17    0.0581
+18    0.0323
+19    0.0300
+20    0.0063
+21   -0.0030
+22   -0.0583
+23   -0.1433
+
+hours where PPO gains: +0.272 $/day; where it loses: -0.282 $/day
+
+share of steps idle / at full power:
+                 idle   full
+controller                  
+Oracle          0.591  0.363
+PPO             0.202  0.033
+Threshold rule  0.858  0.120
+
+cycles/day: {'Oracle': 1.72, 'PPO': 0.98, 'Threshold rule': 0.57}
+saving per cycle ($): {'Oracle': 0.293, 'PPO': 0.287, 'Threshold rule': 0.51}
+
+energy-weighted price when charging / discharging (c/kWh):
+                charge_price_c  discharge_price_c
+controller                                       
+Oracle                    1.79               4.27
+PPO                       1.88               4.33
+Threshold rule            1.72               5.88
+
+wrote results/schedules_by_hour.csv and results/figures/schedules.png
