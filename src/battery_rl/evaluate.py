@@ -60,6 +60,7 @@ def run_config(args: dict) -> EnvConfig:
         relative_actions=not args.get("absolute_actions", "oob_penalty" not in args),
         linear_actions=args.get("linear_actions", False),
         battery_only_reward=args.get("battery_reward", False),
+        dam_hours=args.get("dam_hours", 0),
     )
 
 

@@ -161,6 +161,8 @@ def main() -> None:
                     help="stretch goal: drop training days whose max price is >= PRICE ($/kWh)")
     ap.add_argument("--buffer-size", type=int, default=1_000_000, help="sac: replay buffer size")
     ap.add_argument("--learning-starts", type=int, default=10_000, help="sac: random-action steps before updates")
+    ap.add_argument("--dam-hours", type=int, default=0,
+                    help="add the day-ahead price for the next N hours to the state (0 = off)")
     ap.add_argument("--name", default=None)
     args = ap.parse_args()
 
@@ -174,7 +176,8 @@ def main() -> None:
     cfg = EnvConfig(tariff=Tariff(import_adder=args.import_adder), include_load_solar=not args.price_only,
                     wear_cost=args.wear_cost, relative_actions=not args.absolute_actions,
                     linear_actions=args.linear_actions,
-                    out_of_range_penalty=args.oob_penalty, battery_only_reward=args.battery_reward)
+                    out_of_range_penalty=args.oob_penalty, battery_only_reward=args.battery_reward,
+                    dam_hours=args.dam_hours)
 
     def make_train_env():
         env = HomeBatteryEnv(df, split["train"], cfg)

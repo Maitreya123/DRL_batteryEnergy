@@ -81,6 +81,9 @@ class EnvConfig:
     # True: reward counts only the battery's effect on the bill (cost with battery - cost without), which removes
     # the household's own cost, a large term no action can change. The optimal policy is unchanged.
     battery_only_reward: bool = False
+    # Day-ahead (DAM) prices for the next `dam_hours` hours as extra state, 0 where the hour is past the end of the
+    # episode or its DAM price was not yet published at the current step. 0 = off (the original state).
+    dam_hours: int = 0
 
 
 def price_feature(price: np.ndarray | float, ref: float) -> np.ndarray:
@@ -103,10 +106,15 @@ class HomeBatteryEnv(gym.Env):
         self.load = data["load"].to_numpy(np.float64)
         self.solar = data["solar"].to_numpy(np.float64)
         self.dow = data["dow"].to_numpy(np.int64)
+        if self.cfg.dam_hours:
+            if "dam" not in data:
+                raise ValueError("dam_hours > 0 needs the DAM file; rebuild the dataset with `python -m battery_rl.data`")
+            self.dam = data["dam"].to_numpy(np.float64)
+            self.dam_known_idx = data["dam_known_idx"].to_numpy(np.int64)
         day_col = data["day"].to_numpy()
         self.day_start = {int(d): int(np.flatnonzero(day_col == d)[0]) for d in np.unique(day_col)}
 
-        n_obs = 1 + (1 + self.cfg.price_history) + (2 if self.cfg.include_load_solar else 0) + 3
+        n_obs = 1 + (1 + self.cfg.price_history) + (2 if self.cfg.include_load_solar else 0) + 3 + self.cfg.dam_hours
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(n_obs,), dtype=np.float32)
         self.action_space = spaces.Box(-1.0, 1.0, shape=(1,), dtype=np.float32)
 
@@ -123,7 +131,19 @@ class HomeBatteryEnv(gym.Env):
             feats += [self.load[i] / b.p_max_kw, self.solar[i] / b.p_max_kw]
         ang = 2 * np.pi * self.t / STEPS_PER_DAY
         feats += [np.sin(ang), np.cos(ang), self.dow[i] / 6.0]
+        if cfg.dam_hours:
+            feats += list(self.dam_features(i))
         return np.asarray(feats, dtype=np.float32)
+
+    def dam_features(self, i: int) -> np.ndarray:
+        """asinh-scaled DAM price at the start of each of the next dam_hours hours, as known at row i."""
+        end = self.day_start[self.day] + STEPS_PER_DAY
+        out = np.zeros(self.cfg.dam_hours)
+        for k in range(self.cfg.dam_hours):
+            j = i + 4 * k
+            if j < end and self.dam_known_idx[j] <= i:
+                out[k] = price_feature(self.dam[j], self.cfg.price_ref)
+        return out
 
     def base_load(self, i: int) -> float:
         return (self.load[i] - self.solar[i]) if self.cfg.include_load_solar else 0.0

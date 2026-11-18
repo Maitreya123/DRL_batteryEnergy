@@ -49,6 +49,25 @@ tied, but it is further from the oracle than before, and the seeds vary more. A 
 since unconstrained PPO already cycles 0.73 times a day, so the constraint mostly costs savings. The threshold rule
 is tuned on price alone and charges from the grid regardless of solar, so it is a weak baseline under this tariff.
 
+## Day-ahead price forecasts in the state
+
+ERCOT publishes day-ahead (DAM) hub prices for each delivery day the afternoon before. With `--dam-hours 24`, the
+state also holds the DAM price for each of the next 24 hours: 0 for hours past midnight and for prices not yet
+published. Both groups below were trained on a MacBook with the main configuration, 5 seeds each
+(`results/dam_test_table.txt`).
+
+| Method | % of oracle savings, all days | ordinary days | cycles/day |
+|---|---|---|---|
+| PPO | 70.9 ± 2.9 | 56.2 ± 4.6 | 1.00 |
+| PPO + 24 h of DAM prices | 70.3 ± 5.9 | 57.9 ± 5.4 | 1.01 |
+| Threshold rule | 56.2 | 58.2 | 0.59 |
+
+The forecasts do not measurably help: the difference is well inside the seed-to-seed spread, and PPO still only
+ties the threshold rule on ordinary days. A likely reason: on ordinary days the DAM price predicts the typical shape
+of the day well (hourly averages correlate at 0.90) but individual real-time prices poorly (0.18 per interval, against
+0.39 for the real-time price an hour earlier). The shape is something the agent already learns from the time of day.
+The DAM file is downloaded by `scripts/download_data.py`.
+
 ## Layout
 
 ```

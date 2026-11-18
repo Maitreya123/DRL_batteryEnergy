@@ -5,6 +5,8 @@ Time conventions of the raw sources, all converted to UTC before merging:
   "Delivery Interval" is 1..4 within the hour, and "Repeated Hour Flag" = "Y" marks the second copy of
   the repeated hour when DST ends in November.
 - ResStock AMY2018: local *standard* time (UTC-6, no DST), timestamp marks the END of each 15-minute interval.
+- ERCOT DAM (NP4-180-ER): same Central prevailing time, hourly, "Hour Ending" as "HH:00". Results for a
+  delivery day are published around 13:30 the day before; we treat them as known from 14:00.
 - EPW weather (Camp Mabry, AMY2018): local standard time, hourly, hour-ending values.
 
 Each row of the output is labelled by the START of its 15-minute interval, in UTC.
@@ -28,6 +30,8 @@ CENTRAL = "America/Chicago"  # prevailing Central time (with DST), used by ERCOT
 STEP = pd.Timedelta(minutes=15)
 
 ERCOT_XLSX = RAW / "ercot" / "rpt.00013061.0000000000000000.RTMLZHBSPP_2018.xlsx"
+ERCOT_DAM_XLSX = RAW / "ercot" / "rpt.00013060.0000000000000000.DAMLZHBSPP_2018.xlsx"
+DAM_PUBLISHED = pd.Timedelta(hours=14)  # DAM results for day D are treated as known from 14:00 CPT on D - 1
 EPW = RAW / "citylearn" / "weather.epw"
 RESSTOCK_URL = (
     "https://oedi-data-lake.s3.amazonaws.com/nrel-pds-building-stock/end-use-load-profiles-for-us-building-stock/"
@@ -60,6 +64,32 @@ def load_prices(settlement_point: str = "HB_HUBAVG") -> pd.Series:
     if price.index.has_duplicates:
         raise ValueError("duplicate ERCOT timestamps after UTC conversion")
     return price
+
+
+def load_dam_prices(settlement_point: str = "HB_HUBAVG") -> pd.DataFrame:
+    """ERCOT day-ahead price ($/kWh) per hour, indexed by hour start in UTC, with the UTC time it became known."""
+    sheets = pd.read_excel(ERCOT_DAM_XLSX, sheet_name=None)
+    df = pd.concat(sheets.values(), ignore_index=True)
+    df = df[df["Settlement Point"] == settlement_point].copy()
+    date = pd.to_datetime(df["Delivery Date"], format="%m/%d/%Y")
+    hour_ending = df["Hour Ending"].astype(str).str.slice(0, 2).astype(int)
+    start_local = date + pd.to_timedelta(hour_ending - 1, unit="h")
+    is_dst_for_ambiguous = (df["Repeated Hour Flag"].astype(str).str.upper() != "Y").to_numpy()
+    start_utc = (
+        pd.DatetimeIndex(start_local)
+        .tz_localize(CENTRAL, ambiguous=is_dst_for_ambiguous, nonexistent="raise")
+        .tz_convert("UTC")
+    )
+    known_utc = (
+        pd.DatetimeIndex(date - pd.Timedelta(days=1) + DAM_PUBLISHED)
+        .tz_localize(CENTRAL, ambiguous=True, nonexistent="shift_forward")
+        .tz_convert("UTC")
+    )
+    out = pd.DataFrame({"dam": df["Settlement Point Price"].to_numpy(float) / 1000.0, "dam_known": known_utc},
+                       index=start_utc).sort_index()
+    if out.index.has_duplicates:
+        raise ValueError("duplicate ERCOT DAM timestamps after UTC conversion")
+    return out
 
 
 def load_household(bldg: int = DEFAULT_BUILDING) -> pd.Series:
@@ -120,6 +150,12 @@ def build(bldg: int = DEFAULT_BUILDING, settlement_point: str = "HB_HUBAVG") -> 
     solar = load_solar().reindex(grid)
     df = pd.DataFrame({"price": price, "load": load, "solar": solar}, index=grid)
     df.index.name = "start_utc"
+    if ERCOT_DAM_XLSX.exists():  # optional: only needed for the day-ahead forecast features
+        dam = load_dam_prices(settlement_point)
+        hourly = dam.reindex(grid.floor("h"))
+        df["dam"] = hourly["dam"].to_numpy()
+        # row index of the first interval that starts at or after the DAM price for this row was published
+        df["dam_known_idx"] = np.searchsorted(grid.asi8, pd.DatetimeIndex(hourly["dam_known"]).asi8, side="left")
 
     # ERCOT's 2018 file starts at 00:00 Central prevailing time on Jan 1, which is 00:00 LST, and ends at
     # 23:45 Dec 31, so the grid is fully covered; any gap would be a conversion bug, not missing data.
@@ -164,7 +200,7 @@ def main() -> None:
     out = PROCESSED / "austin_2018.parquet"
     df.to_parquet(out)
     print(f"wrote {out}: {len(df)} rows, {df['day'].nunique()} days")
-    print(df[["price", "load", "solar"]].describe().round(4).to_string())
+    print(df[[c for c in ("price", "dam", "load", "solar") if c in df]].describe().round(4).to_string())
 
 
 if __name__ == "__main__":
