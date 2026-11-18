@@ -67,6 +67,6 @@ before the end of the day, not missed peaks.
 - **Ablation** (3 seeds each): only the battery-only reward changes the mean noticeably (about 3 points). Removing
   all three fixes made one of three seeds collapse to 26% of the oracle, so the fixes mainly buy reliability.
 - **The 0.5 budget**: neither a longer λ warm-up nor a PID multiplier update reaches it. Small flows under 1 kW
-  account for 0.09-0.18 cycles a day, because idle is not a fixed action under linear actions. A 1 kW deadband at
+  account for 0.09-0.20 cycles a day, because idle is not a fixed action under linear actions. A 1 kW deadband at
   evaluation time brings the agents to 0.49-0.54 cycles a day for a small loss in savings.
 - **Wear cost**: seeds 3 and 4 were added for every wear cost, so each now has 5 seeds.
