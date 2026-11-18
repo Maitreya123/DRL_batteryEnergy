@@ -1,0 +1,10 @@
+test days: 91 (4 spike days with a price above $1.0/kWh)
+method                   seeds    % oracle (all)  % oracle (ordinary)        bill $/day      saving $/day           EFC/day
+---------------------------------------------------------------------------------------------------------------------------
+DQN                          5     64.51 ±  7.46        44.59 ± 12.68      0.54 ±  0.07      0.60 ±  0.07      1.54 ±  0.18
+Threshold rule               1             56.18                58.18              0.61              0.52              0.59
+Oracle (hindsight)           1            100.00               100.00              0.20              0.93              1.72
+Oracle, <= 1.0 EFC/day       1             95.36                93.33              0.25              0.89              0.99
+Oracle, <= 0.75 EFC/day      1             87.81                85.15              0.32              0.82              0.75
+Oracle, <= 0.5 EFC/day       1             76.34                73.95              0.43              0.71              0.50
+No battery                   1              0.00                 0.00              1.14              0.00              0.00
