@@ -1,4 +1,4 @@
-"""Train DQN or PPO on the home-battery environment and score it on validation days.
+"""Train DQN, PPO, PPO-Lagrangian or SAC on the home-battery environment and score it on validation days.
 
 Example:
     python -m battery_rl.train --algo dqn --price-only --steps 500000 --seed 0
@@ -21,7 +21,7 @@ from pathlib import Path
 
 import gymnasium as gym
 import numpy as np
-from stable_baselines3 import DQN, PPO
+from stable_baselines3 import DQN, PPO, SAC
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -132,7 +132,7 @@ class LagrangeUpdate(BaseCallback):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--algo", choices=["dqn", "ppo", "ppo-lag"], required=True)
+    ap.add_argument("--algo", choices=["dqn", "ppo", "ppo-lag", "sac"], required=True)
     ap.add_argument("--efc-budget", type=float, default=1.0, help="ppo-lag: expected cycles per day")
     ap.add_argument("--lambda-lr", type=float, default=0.1, help="ppo-lag: dual step size (the PID's ki)")
     ap.add_argument("--lambda-start", type=int, default=500_000, help="ppo-lag: steps before lambda updates begin")
@@ -159,6 +159,8 @@ def main() -> None:
     ap.add_argument("--ent-coef", type=float, default=0.0)
     ap.add_argument("--exclude-spikes", type=float, default=None, metavar="PRICE",
                     help="stretch goal: drop training days whose max price is >= PRICE ($/kWh)")
+    ap.add_argument("--buffer-size", type=int, default=1_000_000, help="sac: replay buffer size")
+    ap.add_argument("--learning-starts", type=int, default=10_000, help="sac: random-action steps before updates")
     ap.add_argument("--name", default=None)
     args = ap.parse_args()
 
@@ -195,6 +197,15 @@ def main() -> None:
         model = DQN("MlpPolicy", venv, learning_rate=args.lr or 1e-4, buffer_size=300_000, learning_starts=10_000,
                     batch_size=256, gamma=args.gamma, train_freq=4, target_update_interval=4_000,
                     exploration_fraction=0.3, exploration_final_eps=0.02, policy_kwargs=policy_kwargs,
+                    seed=args.seed, device=args.device, tensorboard_log=str(out / "tb"), verbose=0)
+    elif args.algo == "sac":
+        # One gradient step per environment step (SB3's default ratio), whatever the number of parallel envs.
+        # SAC's actor outputs its own (state-dependent) log std and squashes with tanh, so --log-std-init and the
+        # out-of-range penalty have no effect here.
+        venv = make_vec_env(make_train_env, n_envs=args.n_envs, seed=args.seed, vec_env_cls=DummyVecEnv)
+        model = SAC("MlpPolicy", venv, learning_rate=args.lr or 3e-4, buffer_size=args.buffer_size,
+                    learning_starts=args.learning_starts, batch_size=256, gamma=args.gamma, tau=0.005,
+                    train_freq=1, gradient_steps=args.n_envs, ent_coef="auto", policy_kwargs=policy_kwargs,
                     seed=args.seed, device=args.device, tensorboard_log=str(out / "tb"), verbose=0)
     else:
         # The environment is cheap, so stepping all copies in one process is faster than subprocesses and lets
