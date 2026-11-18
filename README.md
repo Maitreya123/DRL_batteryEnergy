@@ -133,6 +133,28 @@ and back at 50% by midnight, and that the Lagrangian penalty reaches the trainin
 - **Checkpoint selection** uses the share of oracle savings summed over validation days, which a few spike days
   can dominate.
 
+## The ~0.55 cycles/day floor
+
+PPO-Lagrangian misses a 0.5 cycles/day budget. Three variants, 3 seeds each, trained on a MacBook
+(`results/cycle_floor_table.txt`):
+
+| Budget 0.5 | % of oracle, all days | ordinary days | cycles/day |
+|---|---|---|---|
+| λ warm-up 500k steps (default) | 64.6 ± 15.8 | 46.2 ± 19.2 | 0.57 ± 0.01 |
+| λ warm-up 1.5M steps | 67.6 ± 2.2 | 50.6 ± 2.8 | 0.84 ± 0.37 |
+| PID multiplier update (kp = kd = 2) | 67.4 ± 6.9 | 48.6 ± 5.5 | 0.58 ± 0.02 |
+
+A longer warm-up leaves the multiplier too little time and overshoots the budget. The PID update makes the savings
+steadier across seeds but lands on the same floor. So the floor is probably not in the multiplier dynamics.
+
+What the agents do points to the action mapping instead. With linear actions, idle is not a fixed action: the
+action that maps to 0 kW moves every step with the feasible range, so the deterministic policy rarely hits it
+exactly. The b0.5 agents are idle in only 15-36% of steps, and flows under 1 kW add 0.09-0.18 cycles/day, about the
+gap to the budget. Rounding requested flows below a deadband to 0 kW at evaluation time, without retraining,
+brings all six agents to 0.49-0.54 cycles/day, at a cost of 1-2 points of savings for most seeds and 7-10 for two
+(`results/cycle_floor_deadband.txt`). Training with an explicit idle action, or a deadband inside the environment,
+is the natural next step.
+
 ## AI-use disclosure
 
 As the course policy allows for the project, we used Claude (Anthropic) to help write the code and run the
