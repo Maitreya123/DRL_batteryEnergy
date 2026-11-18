@@ -26,7 +26,10 @@ SAC uses the same environment and flags as PPO (`--algo sac`, Stable-Baselines3 
 `results/sac_test_table.txt`). It falls short of both PPO and the threshold rule, cycling about 1.5 times a day
 without the oracle's savings to show for it; with gamma = 1.0 its bootstrapped critic may be the weak point.
 
-"Ordinary days" excludes the 4 test days whose price exceeded $1/kWh. Full tables: `results/test_table.txt`,
+"Ordinary days" excludes the 4 test days whose price exceeded $1/kWh. Seeds 3 and 4 of every wear-cost setting
+(0.5, 1, 2 and 4 ¢/kWh) were trained on a MacBook, so each wear cost now has 5 seeds;
+`results/wear_seeds34_test_table.txt` scores the two new seeds alone. The 5-seed rows need the runs from both
+machines in one `runs/` folder: `python scripts/report.py --group PPO-wear_0.01 ppowear_w0.01_s0 ... ppowear_w0.01_s4`. Full tables: `results/test_table.txt`,
 `results/spikes_table.txt`. Figures: `results/figures/`. Day replays: `results/videos/`.
 
 ## Retail tariff (4.5 ¢/kWh charge on imports)
