@@ -14,15 +14,14 @@ over seeds, as in report.py). Per-day oracle shares are also printed for the 4 t
 from __future__ import annotations
 
 import argparse
-import json
 
 import numpy as np
 import pandas as pd
 from stable_baselines3 import PPO
 
 from battery_rl.data import ROOT, load_dataset, split_days
-from battery_rl.env import EnvConfig, HomeBatteryEnv
-from battery_rl.evaluate import evaluate, model_controller
+from battery_rl.env import HomeBatteryEnv
+from battery_rl.evaluate import evaluate, model_controller, run_args, run_config
 
 from report import SPIKE_PRICE, ci, pct
 
@@ -40,7 +39,7 @@ def main() -> None:
     test_ordinary = np.setdiff1d(split["test"], spikes)
     days = np.union1d(spikes, split["test"])
     sets = {"test ordinary": test_ordinary, "test spikes": test_spikes, "all spikes": spikes}
-    print(f"spike days (max price >= ${SPIKE_PRICE}/kWh): {len(spikes)}; in test: {list(test_spikes)}")
+    print(f"spike days (max price >= ${SPIKE_PRICE}/kWh): {len(spikes)}; in test: {[int(d) for d in test_spikes]}")
 
     header = f"{'method':<24}" + "".join(f"{k + ' (%)':>20}" for k in sets) + "   per test-spike day (%)"
     print(header)
@@ -49,10 +48,7 @@ def main() -> None:
         per_set = {k: [] for k in sets}
         per_day = []
         for run in runs:
-            a = json.loads((ROOT / "runs" / run / "args.json").read_text())
-            cfg = EnvConfig(relative_actions=not a.get("absolute_actions", "oob_penalty" not in a),
-                            linear_actions=a.get("linear_actions", False),
-                            battery_only_reward=a.get("battery_reward", False))
+            cfg = run_config(run_args(run))
             model = PPO.load(ROOT / "runs" / run / "best_model", device="cpu")
             res = evaluate(HomeBatteryEnv(df, days, cfg), days, model_controller(model))
             for k, ds in sets.items():

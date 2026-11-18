@@ -39,7 +39,7 @@ def solve_oracle(price, base_kw, env_cfg, efc_cap: float | None = None) -> Oracl
     obj[C] += env_cfg.wear_cost * dt
     obj[D] += env_cfg.wear_cost * dt
 
-    rows, lb, ub = [], [], []
+    lb, ub = [], []
     A = lil_matrix((4 * T + 1, nv))
     r = 0
     for t in range(T):

@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import json
-from pathlib import Path
+import os
 
 import numpy as np
 import pandas as pd
 
 from .baselines import day_arrays, run_controller, solve_oracle
-from .data import PROCESSED
-from .env import EnvConfig, HomeBatteryEnv
+from .data import PROCESSED, ROOT
+from .env import EnvConfig, HomeBatteryEnv, Tariff
 
 
 def _cfg_key(cfg: EnvConfig, efc_cap) -> str:
@@ -43,6 +42,27 @@ def oracle_table(env: HomeBatteryEnv, days, efc_cap: float | None = None) -> pd.
     return have.loc[[int(d) for d in days]]
 
 
+def run_args(run: str) -> dict:
+    """The command-line arguments a run in runs/<run>/ was trained with."""
+    return json.loads((ROOT / "runs" / run / "args.json").read_text())
+
+
+def run_config(args: dict) -> EnvConfig:
+    """Environment for scoring a trained run, rebuilt from its args.json.
+
+    Wear cost is always 0 here: it is only a training signal, and every method is scored on the real bill.
+    Runs from before relative actions existed have no flag (and no oob_penalty) and used absolute actions.
+    """
+    return EnvConfig(
+        tariff=Tariff(import_adder=args.get("import_adder", 0.0)),
+        include_load_solar=not args.get("price_only", False),
+        wear_cost=0.0,
+        relative_actions=not args.get("absolute_actions", "oob_penalty" not in args),
+        linear_actions=args.get("linear_actions", False),
+        battery_only_reward=args.get("battery_reward", False),
+    )
+
+
 def model_controller(model, deterministic: bool = True):
     def ctrl(env, obs):
         action, _ = model.predict(obs, deterministic=deterministic)
@@ -70,7 +90,8 @@ def summarize(per_day: pd.DataFrame) -> dict:
         "mean_bill": float(per_day["bill"].mean()),
         "mean_saving": float(saving.mean()),
         "pct_of_oracle": float(100 * saving.sum() / oracle_saving.sum()),
-        # same ratio with each day weighted equally, so a few spike days cannot dominate it
-        "median_day_pct_of_oracle": float(100 * np.median(saving / oracle_saving.where(oracle_saving > 1e-9))),
+        # same ratio with each day weighted equally, so a few spike days cannot dominate it; days where even the
+        # oracle saves nothing have no share to report and are skipped (np.median would turn them into NaN)
+        "median_day_pct_of_oracle": float(100 * np.nanmedian(saving / oracle_saving.where(oracle_saving > 1e-9))),
         "mean_efc": float(per_day["efc"].mean()),
     }

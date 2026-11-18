@@ -23,7 +23,7 @@ from stable_baselines3 import PPO
 from battery_rl.baselines import day_arrays, run_controller, solve_oracle, threshold_controller, tune_threshold
 from battery_rl.data import LST, ROOT, load_dataset, split_days
 from battery_rl.env import EnvConfig, HomeBatteryEnv
-from battery_rl.evaluate import evaluate, model_controller, oracle_table
+from battery_rl.evaluate import evaluate, model_controller, oracle_table, run_args, run_config
 
 OUT = ROOT / "results"
 FIG = OUT / "figures"
@@ -48,10 +48,7 @@ GROUPS = {
 
 
 def cfg_for(run: str) -> EnvConfig:
-    a = json.loads((ROOT / "runs" / run / "args.json").read_text())
-    return EnvConfig(relative_actions=not a.get("absolute_actions", "oob_penalty" not in a),
-                     linear_actions=a.get("linear_actions", False),
-                     battery_only_reward=a.get("battery_reward", False))
+    return run_config(run_args(run))
 
 
 def per_run_scores(df, days) -> pd.DataFrame:

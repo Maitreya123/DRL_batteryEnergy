@@ -11,7 +11,6 @@ on ordinary days only (no interval above SPIKE_PRICE), so a few scarcity days ca
 from __future__ import annotations
 
 import argparse
-import json
 
 import numpy as np
 import pandas as pd
@@ -20,8 +19,8 @@ from stable_baselines3 import DQN, PPO
 
 from battery_rl.baselines import threshold_controller, tune_threshold
 from battery_rl.data import ROOT, load_dataset, split_days
-from battery_rl.env import DiscreteActions, EnvConfig, HomeBatteryEnv, Tariff
-from battery_rl.evaluate import evaluate, model_controller
+from battery_rl.env import DiscreteActions, HomeBatteryEnv
+from battery_rl.evaluate import evaluate, model_controller, oracle_table, run_args, run_config
 
 SPIKE_PRICE = 1.0  # $/kWh
 
@@ -66,13 +65,8 @@ def main() -> None:
         seed_scores = []
         for run in runs:
             d = ROOT / "runs" / run
-            a = json.loads((d / "args.json").read_text())
-            cfg = EnvConfig(tariff=Tariff(import_adder=a["import_adder"]), include_load_solar=not a["price_only"],
-                            wear_cost=0.0,  # always score the real bill; wear enters only as a training signal
-                            # runs from before relative actions existed have no flag and used absolute actions
-                            relative_actions=not a.get("absolute_actions", "oob_penalty" not in a),
-                            linear_actions=a.get("linear_actions", False),
-                            battery_only_reward=a.get("battery_reward", False))
+            a = run_args(run)
+            cfg = run_config(a)
             cfg_cache[label] = cfg
             env = HomeBatteryEnv(df, days, cfg)
             algo = DQN if a["algo"] == "dqn" else PPO
@@ -92,7 +86,6 @@ def main() -> None:
     rows.append(("Threshold rule", 1, {k: f"{v:7.2f}" for k, v in scores(thr, ordinary).items()}))
     orc = thr.assign(bill=thr.oracle, efc=thr.oracle_efc)
     rows.append(("Oracle (hindsight)", 1, {k: f"{v:7.2f}" for k, v in scores(orc, ordinary).items()}))
-    from battery_rl.evaluate import oracle_table
     for cap in (1.0, 0.75, 0.5):
         capped = oracle_table(test_env, days, efc_cap=cap)
         orc_c = thr.assign(bill=capped["bill"].to_numpy(), efc=capped["efc"].to_numpy())
@@ -100,11 +93,11 @@ def main() -> None:
     nob = thr.assign(bill=thr.no_battery, efc=0.0)
     rows.append(("No battery", 1, {k: f"{v:7.2f}" for k, v in scores(nob, ordinary).items()}))
 
-    head = f"{'method':<20}{'seeds':>6}  {'% oracle (all)':>16}  {'% oracle (ordinary)':>19}  {'bill $/day':>16}  {'saving $/day':>16}  {'EFC/day':>16}"
+    head = f"{'method':<24}{'seeds':>6}  {'% oracle (all)':>16}  {'% oracle (ordinary)':>19}  {'bill $/day':>16}  {'saving $/day':>16}  {'EFC/day':>16}"
     print(head)
     print("-" * len(head))
     for label, n, r in rows:
-        print(f"{label:<20}{n:>6}  {r['pct_all']:>16}  {r['pct_ordinary']:>19}  {r['bill']:>16}  {r['saving']:>16}  {r['efc']:>16}")
+        print(f"{label:<24}{n:>6}  {r['pct_all']:>16}  {r['pct_ordinary']:>19}  {r['bill']:>16}  {r['saving']:>16}  {r['efc']:>16}")
 
 
 if __name__ == "__main__":
