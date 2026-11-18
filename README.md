@@ -59,6 +59,7 @@ src/battery_rl/
   evaluate.py    per-day scoring against no battery and the oracle (oracle results cached)
   train.py       DQN, PPO, PPO-Lagrangian, SAC (Stable-Baselines3)
 scripts/
+  download_data.py     fetch the raw ERCOT, weather and load data and build the dataset
   check_baselines.py   env-vs-oracle replay check and baseline savings
   report.py            test-day table with seed-level confidence intervals
   spikes.py            stretch goal: price-spike robustness
@@ -74,11 +75,9 @@ networks (measured 6-7x), so runs are parallelised across cores instead.
 ```bash
 uv sync --python 3.11 --managed-python
 
-# raw data (not in the repo): ERCOT 2018 RTM prices and CityLearn's Austin AMY2018 weather file
-#   data/raw/ercot/   <- RTMLZHBSPP_2018.zip from ERCOT report NP6-785-ER, unzipped
-#   data/raw/citylearn/weather.epw  <- CityLearn data/datasets/tx_travis_county_neighborhood/weather.epw
-# ResStock load is downloaded automatically from the OEDI data lake.
-.venv/bin/python -m battery_rl.data
+# raw data (not in the repo): ERCOT 2018 real-time and day-ahead hub prices, CityLearn's Austin AMY2018 weather
+# file and the ResStock household load, all public. Downloads into data/raw/ and builds data/processed/.
+.venv/bin/python scripts/download_data.py
 .venv/bin/python scripts/check_baselines.py
 
 # main configuration (one seed shown)
