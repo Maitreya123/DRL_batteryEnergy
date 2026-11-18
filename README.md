@@ -14,9 +14,12 @@ with a fixed wear cost against a tuned price-threshold rule and a perfect-foresi
 | PPO (5 seeds) | 71.8 ± 0.9 | 57.9 ± 2.5 | 0.95 |
 | PPO-Lagrangian, budget 0.75 cycles/day (5 seeds) | 70.7 ± 1.8 | 55.7 ± 4.5 | 0.74 |
 | PPO + wear cost 1 ¢/kWh (3 seeds) | 67.8 ± 15.4 | 53.3 ± 19.4 | 0.70 |
+| DQN, 11 discrete actions (5 seeds) | 64.5 ± 7.5 | 44.6 ± 12.7 | 1.54 |
 | Threshold rule | 56.2 | 58.2 | 0.59 |
 | Oracle (hindsight) | 100 | 100 | 1.72 |
 
+DQN uses the same configuration as PPO, with the action range split into 11 evenly spaced levels
+(`results/dqn_test_table.txt`). It cycles far more than PPO and trails it on ordinary days.
 "Ordinary days" excludes the 4 test days whose price exceeded $1/kWh. Full tables: `results/test_table.txt`,
 `results/spikes_table.txt`. Figures: `results/figures/`. Day replays: `results/videos/`.
 
