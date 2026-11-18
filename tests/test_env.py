@@ -157,3 +157,20 @@ def test_run_config_from_args():
     assert cfg.wear_cost == 0.0  # scored on the real bill
     old = run_config({"algo": "dqn", "import_adder": 0.045, "price_only": True, "wear_cost": 0.0})
     assert not old.relative_actions and not old.include_load_solar and old.tariff.import_adder == 0.045
+
+
+def test_dam_features_respect_publication_and_episode_end(data):
+    d = data.copy()
+    d["dam"] = 0.05
+    d["dam_known_idx"] = 0
+    # day 1's day-ahead prices only become known 40 steps into day 1
+    d.loc[d["day"] == 1, "dam_known_idx"] = STEPS_PER_DAY + 40
+    env = HomeBatteryEnv(d, np.arange(N_DAYS), EnvConfig(dam_hours=24))
+    obs, _ = env.reset(options={"day": 1})
+    assert env.observation_space.shape == obs.shape
+    assert np.all(obs[-24:] == 0.0)  # not yet published
+    for _ in range(40):
+        obs, *_ = env.step(np.array([0.0]))
+    dam = obs[-24:]
+    hours_left = (STEPS_PER_DAY - 40 + 3) // 4
+    assert np.all(dam[:hours_left] > 0) and np.all(dam[hours_left:] == 0)  # nothing past the end of the day
