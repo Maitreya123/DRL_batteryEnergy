@@ -201,16 +201,21 @@ warm-up has no measurable effect at a 0.75 budget. Three seeds cannot rule out s
 ## The ~0.55 cycles/day floor
 
 PPO-Lagrangian misses a 0.5 cycles/day budget. Three variants, 3 seeds each, trained on a MacBook
-(`results/cycle_floor_table.txt`):
+(`results/cycle_floor_table.txt`), plus two more PID gain settings:
 
 | Budget 0.5 | % of oracle, all days | ordinary days | cycles/day |
 |---|---|---|---|
 | λ warm-up 500k steps (default) | 64.6 ± 15.8 | 46.2 ± 19.2 | 0.57 ± 0.01 |
 | λ warm-up 1.5M steps | 67.6 ± 2.2 | 50.6 ± 2.8 | 0.84 ± 0.37 |
 | PID multiplier update (kp = kd = 2) | 67.4 ± 6.9 | 48.6 ± 5.5 | 0.58 ± 0.02 |
+| PID multiplier update (kp = kd = 1) | 67.9 ± 8.1 | 49.6 ± 7.2 | 0.59 ± 0.03 |
+| PID multiplier update (kp = kd = 5) | 67.3 ± 0.6 | 48.2 ± 3.9 | 0.58 ± 0.04 |
 
 A longer warm-up leaves the multiplier too little time and overshoots the budget. The PID update makes the savings
-steadier across seeds but lands on the same floor. So the floor is probably not in the multiplier dynamics.
+steadier across seeds, more so at higher gains, but all three gain settings land on the same floor. So the floor is
+not in the multiplier dynamics. The kp = kd = 1 and 5 runs (`ppolag_b0.5_pid{1,5}_s{0-2}`) were trained on the lab
+machine with otherwise the same configuration (`results/pid_sweep_table.txt`; with the deadband below,
+`results/pid_sweep_deadband.txt`, 0.52-0.54 cycles/day at 1 kW).
 
 What the agents do points to the action mapping instead. With linear actions, idle is not a fixed action: the
 action that maps to 0 kW moves every step with the feasible range, so the deterministic policy rarely hits it

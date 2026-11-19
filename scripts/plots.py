@@ -182,7 +182,7 @@ def fig_example_day(df, split, scores):
     ax2.set_xlabel("Hour of day (local standard time)")
     ax2.set_ylim(-3, 103)
     ax2.set_xticks(range(0, 25, 3))
-    ax2.legend(loc="upper left", fontsize=9)
+    ax2.legend(loc="lower center", fontsize=9, ncol=2, frameon=False)
     fig.tight_layout()
     fig.savefig(FIG / "example_day.png", dpi=200)
     plt.close(fig)
