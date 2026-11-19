@@ -35,7 +35,8 @@ scores the two new seeds alone). Full tables: `results/test_table.txt`, `results
 
 Under the symmetric tariff, the household's own load and solar cannot change the best battery schedule. With a
 charge on imports, storing solar instead of exporting it starts to pay, so this checks whether the agents use the
-load and solar in their state. Same configuration as above plus `--import-adder 0.045`; 91 test days, 95% CI over
+load and solar in their state. The 4.5 ¢/kWh is an illustrative value, not taken from a specific Texas tariff.
+Same configuration as above plus `--import-adder 0.045`; 91 test days, 95% CI over
 seeds. Full table: `results/retail_test_table.txt`.
 
 | Method | % of oracle savings, all days | ordinary days | cycles/day |
@@ -66,8 +67,9 @@ published. Both groups below were trained on a MacBook with the main configurati
 
 The forecasts do not measurably help: the difference is well inside the seed-to-seed spread, and PPO still only
 ties the threshold rule on ordinary days. A likely reason: on ordinary days the DAM price predicts the typical shape
-of the day well (hourly averages correlate at 0.90) but individual real-time prices poorly (0.18 per interval, against
-0.39 for the real-time price an hour earlier). The shape is something the agent already learns from the time of day.
+of the day well (the average daily profiles correlate at 0.90) but individual real-time prices poorly (0.18 per
+interval, against 0.39 for the real-time price an hour earlier; `scripts/price_correlation.py`). The shape is
+something the agent already learns from the time of day.
 The DAM file is downloaded by `scripts/download_data.py`.
 
 ## Layout
@@ -88,6 +90,7 @@ scripts/
   animate.py           day-replay videos
   schedules.py         hour-by-hour comparison of PPO, the threshold rule and the oracle
   deadband.py          where PPO-Lagrangian's cycles come from, and the evaluation-time deadband
+  price_correlation.py how well day-ahead prices predict real-time prices on ordinary days
 ```
 
 ## Reproducing

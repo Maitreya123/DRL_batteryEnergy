@@ -7,8 +7,8 @@ share of the hindsight oracle's savings on the 91 held-out test days; ± is a 95
 ### A charge on imports makes load and solar matter
 
 Under the symmetric tariff, the household's own load and solar cannot change the optimal battery schedule, which
-was the main caveat of our core results. We added a 4.5 ¢/kWh charge on imports (a delivery charge) and
-retrained PPO and PPO-Lagrangian (budget 0.75), 5 seeds each.
+was the main caveat of our core results. We added a 4.5 ¢/kWh charge on imports (an illustrative value, not taken
+from a specific Texas tariff) and retrained PPO and PPO-Lagrangian (budget 0.75), 5 seeds each.
 
 | Method | % of oracle, all days | ordinary days | cycles/day |
 |---|---|---|---|
@@ -50,8 +50,9 @@ retrained PPO alongside a fresh PPO baseline on the same machine.
 | PPO + 24 h of day-ahead prices | 70.3 ± 5.9 | 57.9 ± 5.4 | 1.01 |
 
 The forecasts do not measurably help, and PPO still only ties the threshold rule on ordinary days. On ordinary
-days the day-ahead price predicts the typical shape of the day (hourly averages correlate at 0.90) but individual
-real-time prices poorly (0.18 per interval, against 0.39 for the real-time price an hour earlier). The shape is
+days the day-ahead price predicts the typical shape of the day (the average daily profiles, the mean price at each
+15-minute time of day, correlate at 0.90) but individual real-time prices poorly (0.18 per interval, against 0.39 for
+the real-time price an hour earlier; computed by `scripts/price_correlation.py`). The shape is
 something the agent already learns from the time of day.
 
 ### Why PPO only ties the rule on ordinary days
